@@ -10,16 +10,22 @@ import fs from 'fs/promises';
 import path from 'path';
 
 const API_BASE = process.env.API_URL || 'http://localhost:3001';
+const API_KEY = process.env.SQUIDWEAVE_API_KEY || '';
 
 async function importProspects(filePath) {
   const raw = await fs.readFile(filePath, 'utf8');
   const data = JSON.parse(raw);
-  
+
   // Handle both array and object-wrapped formats
   const results = Array.isArray(data) ? data : data.results || data.companies || [];
-  
+
   if (results.length === 0) {
     console.error('No prospects found in file');
+    process.exit(1);
+  }
+
+  if (!API_KEY) {
+    console.error('SQUIDWEAVE_API_KEY is not set');
     process.exit(1);
   }
 
@@ -27,7 +33,7 @@ async function importProspects(filePath) {
 
   const response = await fetch(`${API_BASE}/api/prospecting/import`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'x-api-key': API_KEY },
     body: JSON.stringify({ results })
   });
 
